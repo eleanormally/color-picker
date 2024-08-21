@@ -7,7 +7,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 <div class="flex justify-center items-center h-screen w-screen">
 	<div id="picker-selector" class="absolute rounded-full border-white w-12 h-12 border-4 shadow-sm" style="display: none"></div>
 	<div class="flex justify-center items-center">
-		<canvas id="picker-canvas" class="rounded-full border-white border-8 shadow-md"></canvas>
+		<canvas id="picker-canvas" class="rounded-full border-white border-8 shadow-md" style="box-sizing: border-box"></canvas>
   </div>
   </div>
 `

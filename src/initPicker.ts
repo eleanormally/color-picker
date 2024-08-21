@@ -1,5 +1,28 @@
 import { Hct, redFromArgb, greenFromArgb, blueFromArgb } from "@material/material-color-utilities"
 
+function hslToRgb(h: number, s: number, l: number) {
+  let r, g, b;
+
+  if (s === 0) {
+    r = g = b = l; // achromatic
+  } else {
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hueToRgb(p, q, h + 1 / 3);
+    g = hueToRgb(p, q, h);
+    b = hueToRgb(p, q, h - 1 / 3);
+  }
+
+  return [(r * 255), (g * 255), (b * 255)];
+}
+function hueToRgb(p: number, q: number, t: number) {
+  if (t < 0) t += 1;
+  if (t > 1) t -= 1;
+  if (t < 1 / 6) return p + (q - p) * 6 * t;
+  if (t < 1 / 2) return q;
+  if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+  return p;
+}
 export default function initPicker() {
   const canvas = document.getElementById("picker-canvas") as HTMLCanvasElement || null
   if (canvas === null) {
@@ -26,12 +49,11 @@ export default function initPicker() {
     let dx = x / width * 2 - 1
     let dy = y / height * 2 - 1
     let radius = Math.sqrt((dx * dx) + (dy * dy))
-    let angle = Math.atan(dy / dx) / Math.PI * 180
+    let angle = Math.asin(dy / radius) / Math.PI * 180
     if (dx < 0) {
-      angle += 180
+      angle = 180 - angle
     }
-    // let color = Hct.from(angle, radius * 200 / Math.sqrt(2), 100 - (radius * 50 / Math.sqrt(2))).toInt()
-    let color = Hct.from(angle, 100, 100 - (radius * 50 / Math.sqrt(2))).toInt()
+    let color = Hct.from(angle, radius * 90, 100 - radius * 30).toInt()
     data.data[val + 0] = redFromArgb(color) // red
     data.data[val + 1] = greenFromArgb(color) // green
     data.data[val + 2] = blueFromArgb(color) // blue
@@ -41,9 +63,9 @@ export default function initPicker() {
   const preview = document.getElementById("selector") as HTMLElement
   function doCursorMove(e: PointerEvent) {
     const rect = (e.target as HTMLElement).getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    const { data: color } = ctx.getImageData(x, y, 1, 1)
+    const x = e.clientX - rect.left - 8
+    const y = e.clientY - rect.top - 8
+    const { data: color } = ctx!.getImageData(x, y, 1, 1)
     preview.style.backgroundColor = `rgb(${color[0]}, ${color[1]}, ${color[2]})`
     preview.style.left = (e.pageX - 8).toString() + "px"
     preview.style.top = (e.pageY - 8).toString() + "px"
