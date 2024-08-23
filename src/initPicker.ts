@@ -104,13 +104,10 @@ export default function initPicker() {
     distanceLessThan(8)
   )
   snapLayer.mount(posAnim)
-  addReactor(
-    anim,
-    ({ pos }) => {
-      return { borderColorPos: pos }
-    },
-    { borderColorPos: false, scale: false }
-  )
+  addReactor(anim, ({ pos }) => ({ borderColorPos: pos }), {
+    borderColorPos: false,
+    scale: false,
+  })
   updateLayer.subscribe("update", anim => {
     const {
       pos: { x, y },
