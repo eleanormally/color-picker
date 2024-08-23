@@ -9,14 +9,14 @@ importers:
   .:
     dependencies:
       '@aninest/extensions':
-        specifier: ^1.4.0
-        version: 1.4.0
+        specifier: ^1.5.0
+        version: 1.5.0
       '@material/material-color-utilities':
         specifier: ^0.3.0
         version: 0.3.0
       aninest:
-        specifier: ^4.2.2
-        version: 4.2.2
+        specifier: ^4.3.0
+        version: 4.3.0
     devDependencies:
       autoprefixer:
         specifier: ^10.4.20
@@ -28,10 +28,10 @@ importers:
         specifier: ^3.4.10
         version: 3.4.10
       typescript:
-        specifier: ^5.5.3
+        specifier: ^5.5.4
         version: 5.5.4
       vite:
-        specifier: ^5.4.1
+        specifier: ^5.4.2
         version: 5.4.2
 
 packages:
@@ -40,8 +40,8 @@ packages:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
 
-  '@aninest/extensions@1.4.0':
-    resolution: {integrity: sha512-mED/lS9mBlrpH1WGxkx6+8WeQl8XXWgmMp6AYotfnVkQx4Hg2fa+MK3U+MnIusX48J+C3AHLtNlp6XUBCWLQFA==}
+  '@aninest/extensions@1.5.0':
+    resolution: {integrity: sha512-035YpxwqB0vzJPC2Ufrv0aj4teJ4L+NOnqyzDyVGPQTZES71gtMEQQVL6sHkSYZP6D8jlKzVDMm6ld+3YqMVfg==}
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -305,8 +305,8 @@ packages:
   '@types/estree@1.0.5':
     resolution: {integrity: sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==}
 
-  aninest@4.2.2:
-    resolution: {integrity: sha512-MZGofrfkQ/SMiMRzpacvasfWS39HyYWtU1xZMGDTDegCWghpqkJ65Kbi58KBobTtvwlBikHQ8H290ouyKnunxQ==}
+  aninest@4.3.0:
+    resolution: {integrity: sha512-kplLlTYHBYY09G4yOzE17CWCnmddxsTiYMuo1R9v4qN3TzYU5DP8wmr+pBUsgGRIU+SeRRsgBLmwXuDp1sQSqQ==}
 
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
@@ -464,8 +464,8 @@ packages:
     resolution: {integrity: sha512-ZMERYes6pDydyuGidse7OsHxtbI7WVeUEozgR/g7rd0xUimYNlvZRE/K2MgZTjWy725IfelLeVcEM97mmtRGXw==}
     engines: {node: '>=8'}
 
-  is-core-module@2.15.0:
-    resolution: {integrity: sha512-Dd+Lb2/zvk9SKy1TGCt1wFJFo/MWBPMX5x7KcvLajWTGuomczdQX61PvY5yK6SVACwpoexWo81IfFyoKY2QnTA==}
+  is-core-module@2.15.1:
+    resolution: {integrity: sha512-z0vtXSwucUJtANQWldhbtbt7BnL0vxiFjIdDLAatwhDYty2bad6s+rijD6Ri4YuYJubLzIJLUidCh09e1djEVQ==}
     engines: {node: '>= 0.4'}
 
   is-extglob@2.1.1:
@@ -774,7 +774,7 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@aninest/extensions@1.4.0':
+  '@aninest/extensions@1.5.0':
     dependencies:
       aninest: link:../core
 
@@ -940,7 +940,7 @@ snapshots:
 
   '@types/estree@1.0.5': {}
 
-  aninest@4.2.2: {}
+  aninest@4.3.0: {}
 
   ansi-regex@5.0.1: {}
 
@@ -1115,7 +1115,7 @@ snapshots:
     dependencies:
       binary-extensions: 2.3.0
 
-  is-core-module@2.15.0:
+  is-core-module@2.15.1:
     dependencies:
       hasown: 2.0.2
 
@@ -1246,7 +1246,7 @@ snapshots:
 
   resolve@1.22.8:
     dependencies:
-      is-core-module: 2.15.0
+      is-core-module: 2.15.1
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
 
