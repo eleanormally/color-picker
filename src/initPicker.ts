@@ -8,12 +8,15 @@ import {
   addVec,
   changeInterpFunction,
   createAnimation,
+  createParentAnimation,
+  divScalar,
   getSlerp,
   getStateTree,
   mag,
   modifyTo,
   mulScalar,
   newVec2,
+  NO_INTERP,
   normalize,
   subVec,
   Vec2,
@@ -71,10 +74,16 @@ export default function initPicker() {
   }
   ctx.putImageData(data, 0, 0)
   const preview = document.getElementById("selector") as HTMLElement
-  type Anim = Vec2
-  const anim = createAnimation<Anim>(
+  type PosAnim = Vec2
+  type Anim = { pos: PosAnim; scale: { value: number } }
+  const posAnim = createAnimation<PosAnim>(
     newVec2(width / 2, height / 2),
-    getSlerp(0.1)
+    getSlerp(0.05)
+  )
+  const scaleAnim = createAnimation({ value: 1 }, getSlerp(0.2))
+  const anim = createParentAnimation<Anim>(
+    { pos: posAnim, scale: scaleAnim },
+    NO_INTERP
   )
   const updateLayer = getUpdateLayer<Anim>()
   const momentumLayer = localMomentumLayer(0.08, 1)
@@ -82,16 +91,20 @@ export default function initPicker() {
     { x: width / 2, y: height / 2 },
     distanceLessThan(8)
   )
-  snapLayer.mount(anim)
+  snapLayer.mount(posAnim)
   updateLayer.subscribe("update", anim => {
-    const { x, y } = getStateTree(anim)
+    const {
+      pos: { x, y },
+      scale: { value: scale },
+    } = getStateTree(anim)
+
     const { data: color } = ctx!.getImageData(x * DPR, y * DPR, 1, 1)
     preview.style.backgroundColor = `rgb(${color[0]}, ${color[1]}, ${color[2]})`
-    preview.style.transform = `translate(calc(${x}px - 50%), calc(${y}px - 50%))`
+    preview.style.transform = `translate(calc(${x}px - 50%), calc(${y}px - 50%)) scale(${scale})`
     // preview.style.left = x + "px"
     // preview.style.top = y + "px"
   })
-  const restrictExtension = restrictFromFunctionExtension<Anim>(state => {
+  const restrictExtension = restrictFromFunctionExtension<PosAnim>(state => {
     const center = newVec2(width / 2, height / 2)
     const fromCenter = subVec(state, center)
     if (mag(fromCenter) > width / 2 - 8) {
@@ -104,25 +117,25 @@ export default function initPicker() {
       )
       const vel = momentumLayer.getVelocity()
       if (vel == 0) {
-        modifyTo(anim, fromTopLeft, false)
+        modifyTo(posAnim, fromTopLeft, false)
         return
       }
-      const start = getStateTree(anim)
+      const start = getStateTree(posAnim)
       const end = fromTopLeft
       const fromEnd = subVec(start, end)
       const dist = mag(fromEnd)
-      changeInterpFunction(anim, getSlerp(dist / vel))
-      modifyTo(anim, fromTopLeft, false)
+      changeInterpFunction(posAnim, getSlerp(dist / vel))
+      modifyTo(posAnim, fromTopLeft, false)
     }
   })
   updateLayer.mount(anim)
-  momentumLayer.mount(anim)
-  restrictExtension(anim)
+  momentumLayer.mount(posAnim)
+  restrictExtension(posAnim)
   function doCursorMove(e: PointerEvent) {
     const rect = canvas.getBoundingClientRect()
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
-    modifyTo(anim, { x, y })
+    modifyTo(posAnim, { x, y })
     if (numberOfUpdates < 3) {
       momentumLayer.clearRecordedStates()
       numberOfUpdates++
@@ -130,6 +143,9 @@ export default function initPicker() {
   }
   let numberOfUpdates = 0
   canvas.addEventListener("pointerdown", function (e) {
+    modifyTo(scaleAnim, { value: 1.2 })
+    if (e.pointerType !== "mouse") {
+    }
     canvas.style.cursor = "none"
     numberOfUpdates = 0
     preview.style.visibility = "visible"
@@ -141,6 +157,7 @@ export default function initPicker() {
         if (numberOfUpdates > 2) {
           momentumLayer.startGlide()
         }
+        modifyTo(scaleAnim, { value: 1 })
         canvas.style.cursor = "default"
         window.removeEventListener("pointermove", doCursorMove)
       },
