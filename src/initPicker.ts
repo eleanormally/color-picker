@@ -5,11 +5,14 @@ import {
   blueFromArgb,
 } from "@material/material-color-utilities"
 import {
+  addLocalListener,
   addVec,
   changeInterpFunction,
   createAnimation,
   createParentAnimation,
   divScalar,
+  getInterpFunction,
+  getLocalInterpingTo,
   getSlerp,
   getStateTree,
   mag,
@@ -22,6 +25,7 @@ import {
   Vec2,
 } from "aninest"
 import {
+  addReactor,
   distanceLessThan,
   getSnapPointLayer,
   getUpdateLayer,
@@ -75,14 +79,22 @@ export default function initPicker() {
   ctx.putImageData(data, 0, 0)
   const preview = document.getElementById("selector") as HTMLElement
   type PosAnim = Vec2
-  type Anim = { pos: PosAnim; scale: { value: number } }
+  type Anim = {
+    pos: PosAnim
+    scale: { value: number }
+    borderColorPos: PosAnim
+  }
   const posAnim = createAnimation<PosAnim>(
+    newVec2(width / 2, height / 2),
+    getSlerp(0.05)
+  )
+  const borderColorPos = createAnimation<PosAnim>(
     newVec2(width / 2, height / 2),
     getSlerp(0.05)
   )
   const scaleAnim = createAnimation({ value: 1 }, getSlerp(0.2))
   const anim = createParentAnimation<Anim>(
-    { pos: posAnim, scale: scaleAnim },
+    { pos: posAnim, scale: scaleAnim, borderColorPos },
     NO_INTERP
   )
   const updateLayer = getUpdateLayer<Anim>()
@@ -92,14 +104,29 @@ export default function initPicker() {
     distanceLessThan(8)
   )
   snapLayer.mount(posAnim)
+  addReactor(
+    anim,
+    ({ pos }) => {
+      return { borderColorPos: pos }
+    },
+    { borderColorPos: false, scale: false }
+  )
   updateLayer.subscribe("update", anim => {
     const {
       pos: { x, y },
       scale: { value: scale },
+      borderColorPos: { x: borderX, y: borderY },
     } = getStateTree(anim)
 
     const { data: color } = ctx!.getImageData(x * DPR, y * DPR, 1, 1)
+    const { data: borderColor } = ctx!.getImageData(
+      borderX * DPR,
+      borderY * DPR,
+      1,
+      1
+    )
     preview.style.backgroundColor = `rgb(${color[0]}, ${color[1]}, ${color[2]})`
+    // TODO: set border color
     preview.style.transform = `translate(calc(${x}px - 50%), calc(${y}px - 50%)) scale(${scale})`
     // preview.style.left = x + "px"
     // preview.style.top = y + "px"
@@ -126,6 +153,15 @@ export default function initPicker() {
       const dist = mag(fromEnd)
       changeInterpFunction(posAnim, getSlerp(dist / vel))
       modifyTo(posAnim, fromTopLeft, false)
+    }
+  })
+  addLocalListener(posAnim, "start", () => {
+    const posInterp = getInterpFunction(posAnim)
+    if (posInterp(0.2) === undefined) {
+      changeInterpFunction(borderColorPos, NO_INTERP)
+      // set border color here!
+    } else {
+      changeInterpFunction(borderColorPos, posInterp)
     }
   })
   updateLayer.mount(anim)
