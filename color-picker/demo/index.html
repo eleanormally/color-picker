@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <style>
+    body {
+      background: rgb(243 244 246) ;
+    }
+  </style>
+</head>
+<body>
+  <div id="demo"></div>
+
+  <script type="module">
+    import { html, render } from 'lit';
+    import { blueFromArgb, greenFromArgb, Hct, redFromArgb } from '@material/material-color-utilities';
+    import '../dist/src/color-picker.js';
+
+    function color(tone) {
+      return function(x, y) {
+        let radius = Math.sqrt(x * x + y * y)
+        let angle = (Math.asin(y / radius) / Math.PI) * 180
+        if (x < 0) {
+          angle = 180 - angle
+        }
+        let color = Hct.from(angle, radius * 90, Number(tone)).toInt()
+        return [
+          redFromArgb(color),
+          greenFromArgb(color),
+          blueFromArgb(color),
+          255,
+        ]
+      }
+    }
+
+
+    const header = 'Hello owc World!';
+    render(
+      html`
+        <div style="width: 900px; height: 400px">
+          <color-picker id="picker">
+          </color-picker>
+          <input type="text" id="input"></input>
+        </div>
+      `,
+      document.querySelector('#demo')
+    );
+    document.getElementById("input").addEventListener('keyup', (e) => {
+      let text = e.target.value
+      let picker = document.getElementById("picker")
+      picker.drawFunction = color(e.target.value)
+      picker.redrawCanvas()
+    })
+  </script>
+</body>
+</html>
