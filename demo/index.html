@@ -15,7 +15,7 @@
   <script type="module">
     import { html, render } from 'lit';
     import '../dist/src/color-picker.js';
-    import { HCTPolar, VerticalGreyscaleGradient } from '../dist/src/shaders.js'
+    import { HCTPolar, HCTNoZ, VerticalGreyscaleGradient } from '../dist/src/shaders.js'
 
     render(
       html`
@@ -24,9 +24,13 @@
           </color-picker>
           <vertical-slider style="margin-left: 16px;" id="scale"></vertical-slider>
         </div>
+          <color-picker id="picker2">
+          </color-picker>
       `,
       document.querySelector('#demo')
     );
+    let picker2 = document.getElementById("picker2")
+    picker2.setShader(HCTNoZ)
 
     let picker = document.getElementById("picker")
     picker.setShader(HCTPolar)
@@ -35,6 +39,19 @@
     scale.setShader(VerticalGreyscaleGradient)
     scale.addEventListener("valueupdate", function (e) {
       picker.setZAxis(e.detail.value)
+    })
+    picker.addEventListener("posupdate", function(e) {
+      let gl = scale.getGlContext()
+      let rad = Math.sqrt(e.detail.x*e.detail.x+e.detail.y*e.detail.y)
+      let angle = Math.asin(e.detail.y/rad)/Math.PI * 180
+      if (e.detail.x < 0) {
+        angle = 180-angle
+      }
+      const hueLoc = gl.getUniformLocation(scale.getProgram(), "u_hue")
+      gl.uniform1f(hueLoc, angle)
+      const chromaLoc = gl.getUniformLocation(scale.getProgram(), "u_chroma")
+      gl.uniform1f(chromaLoc, rad*100)
+      gl.drawArrays(this.gl.TRIANGLES, 0, 6)
     })
   </script>
 </body>

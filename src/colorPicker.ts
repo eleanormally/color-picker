@@ -35,6 +35,7 @@ export class ColorPicker extends LitElement {
   gl?: WebGLRenderingContext
   program?: WebGLProgram
   zAxis: number
+  selectorColorPos?: { x: number, y: number }
 
   static styles = css`
       :host {
@@ -49,7 +50,6 @@ export class ColorPicker extends LitElement {
       #selector {
         position: absolute;
         height: 2rem;
-        background-color: white;
         width: 2rem;
         border: solid;
         border-width: 3px;
@@ -115,7 +115,7 @@ export class ColorPicker extends LitElement {
   initializeAnimations() {
     const canvas = this.renderRoot.querySelector("#canvas") as HTMLCanvasElement
     const selector = this.renderRoot.querySelector("#selector") as HTMLElement
-    const { width, height, left, top } = canvas.getBoundingClientRect()
+    const { width, height } = canvas.getBoundingClientRect()
     const border = this.renderRoot.querySelector("#border") as HTMLElement
 
     selector.style.transform = `translate(calc(${(width / 2)}px - 50%), calc(${(height / 2)}px - 50%))`
@@ -163,11 +163,24 @@ export class ColorPicker extends LitElement {
       selector.style.backgroundColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
       border.style.outlineColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
       selector.style.transform = `translate(calc(${state.pos.x}px - 50%), calc(${state.pos.y}px - 50%)) scale(${state.scale.value})`
+      this.dispatchEvent(new CustomEvent("posupdate", {
+        detail: {
+          x: (state.pos.x - 16) / ((width - 32) * 0.5) - 1.0,
+          y: 1.0 - (state.pos.y - 16) / ((height - 32) * 0.5),
+          color: `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
+        },
+        bubbles: true
+      }))
+    })
+    updateLayer.subscribe("end", anim => {
+      const state = getStateTree(anim)
+      this.selectorColorPos = { x: (state.pos.x - 14) * window.devicePixelRatio, y: (height - (state.pos.y + 14)) * window.devicePixelRatio }
     })
     updateLayer.mount(fullAnimation)
 
 
     function doCursorMove(e: PointerEvent) {
+      const { left, top } = canvas.getBoundingClientRect()
       modifyTo(posAnim, { x: e.clientX - left, y: e.clientY - top })
     }
 
@@ -180,7 +193,8 @@ export class ColorPicker extends LitElement {
         canvas.style.cursor = "default"
         window.removeEventListener("pointermove", doCursorMove)
         modifyTo(scaleAnim, { value: 1.0 })
-      })
+      },
+        { once: true })
     })
 
 
@@ -221,8 +235,6 @@ export class ColorPicker extends LitElement {
       border.style.height = `${borderRect.height}px`;
     }
     const DPR = window.devicePixelRatio
-    const width = canvas.width
-    const height = canvas.height
     canvas.width *= DPR
     canvas.height *= DPR
   }
@@ -283,6 +295,8 @@ export class ColorPicker extends LitElement {
   }
 
   setZAxis(z: number) {
+    const selector = this.renderRoot.querySelector("#selector") as HTMLElement
+    const border = this.renderRoot.querySelector("#border") as HTMLElement
     this.zAxis = z
     if (this.gl === undefined || this.program === undefined) {
       return
@@ -290,10 +304,20 @@ export class ColorPicker extends LitElement {
     const zUniform = this.gl.getUniformLocation(this.program, 'u_zAxis')
     this.gl.uniform1f(zUniform, z)
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+    if (this.selectorColorPos !== undefined) {
+      let pixel = new Uint8Array(4);
+      this.gl?.readPixels(this.selectorColorPos.x, this.selectorColorPos.y, 1, 1, this.gl?.RGBA, this.gl?.UNSIGNED_BYTE, pixel)
+      selector.style.backgroundColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
+      border.style.outlineColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
+    }
   }
 
   getGlContext(): WebGLRenderingContext | undefined {
     return this.gl
+  }
+
+  getProgram(): WebGLProgram | undefined {
+    return this.program
   }
 
 }

@@ -862,7 +862,7 @@ void main() {
     if (uv.x < 0.0) {
       angle = 180.0 - angle;
     }
-    fragColor = hct(angle, rad*90.0, 100.0-(rad*50.0));
+    fragColor = hct(angle, rad*90.0, 100.0-(rad*100.0));
 }`
 
 const VerticalGreyscaleGradient = `#version 300 es
@@ -872,7 +872,8 @@ precision highp float;
 #endif
 
 uniform vec2 u_resolution;
-uniform float u_zAxis;
+uniform float u_hue;
+uniform float u_chroma;
 out vec4 fragColor;
 
 #define PI 3.1415926538
@@ -1292,7 +1293,7 @@ vec4 hct(float hue, float chroma, float tone) {
 
 void main() {
     vec2 uv = (gl_FragCoord.xy / u_resolution.xy * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
-    fragColor = hct(0.0, 0.0, (clamp((uv.y*1.3), -1.0, 1.0)+1.0)*50.0);
+    fragColor = hct(u_hue, u_chroma, (clamp((uv.y*1.1), -1.0, 1.0)+1.0)*50.0);
 }
 `
 

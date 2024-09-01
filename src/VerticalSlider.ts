@@ -46,9 +46,9 @@ export class VerticalSlider extends LitElement {
     }
     #selector {
       position: absolute;
-      background-color: white;
       height: 20px;
       width: 20px;
+      background-color: white;
       border: solid;
       border-width: 3px;
       box-sizing: border-box;
@@ -116,9 +116,11 @@ export class VerticalSlider extends LitElement {
       scale: scaleAnim
     }, NO_INTERP)
 
+    let pixel = new Uint8Array(4)
     const updateLayer = getUpdateLayer<Anim>()
     updateLayer.subscribe("update", anim => {
       const state = getStateTree(anim)
+      this.gl?.readPixels(width / 2 * window.devicePixelRatio, (height - state.pos.value - 10), 1, 1, this.gl?.RGBA, this.gl?.UNSIGNED_BYTE, pixel)
       selector.style.transform = `translate(calc(${width / 2}px - 50%), calc(${state.pos.value}px - 50%)) scale(${state.scale.value})`
       this.dispatchEvent(new CustomEvent("valueupdate", {
         detail: {
@@ -141,7 +143,7 @@ export class VerticalSlider extends LitElement {
       window.addEventListener("pointerup", function() {
         window.removeEventListener("pointermove", doCursorMove)
         modifyTo(scaleAnim, { value: 1.0 })
-      })
+      }, { once: true })
     })
 
 
@@ -210,6 +212,10 @@ export class VerticalSlider extends LitElement {
 
   getGlContext(): WebGLRenderingContext | undefined {
     return this.gl
+  }
+
+  getProgram(): WebGLProgram | undefined {
+    return this.program
   }
 
 }
