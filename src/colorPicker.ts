@@ -68,13 +68,13 @@ export class ColorPicker extends LitElement {
         border-color: white;
         --tw-pinch-zoom: pinch-zoom;
         touch-action: var(--tw-pan-x) var(--tw-pan-y) var(--tw-pinch-zoom);
-        border-width: 8px;
+        border-width: 12px;
         height: 100%;
         width: 100%;
         display: flex;
         justify-content: center;
         align-items: center;
-        z-index: 2;
+        z-index: 3;
         background-color: white;
       }
       #canvas {
@@ -113,7 +113,7 @@ export class ColorPicker extends LitElement {
     const canvas = this.renderRoot.querySelector("#canvas") as HTMLCanvasElement
     const selector = this.renderRoot.querySelector("#selector") as HTMLElement
     const { width, height, left, top } = canvas.getBoundingClientRect()
-    // const border = this.renderRoot.querySelector("#border") as HTMLElement
+    const border = this.renderRoot.querySelector("#border") as HTMLElement
 
     selector.style.transform = `translate(calc(${(width / 2)}px - 50%), calc(${(height / 2)}px - 50%))`
 
@@ -157,8 +157,8 @@ export class ColorPicker extends LitElement {
       const state = getStateTree(anim)
 
       this.gl?.readPixels((state.pos.x - 14) * window.devicePixelRatio, (height - (state.pos.y + 14)) * window.devicePixelRatio, 1, 1, this.gl?.RGBA, this.gl?.UNSIGNED_BYTE, pixel)
-      console.log(pixel)
       selector.style.backgroundColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
+      border.style.borderColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
       selector.style.transform = `translate(calc(${state.pos.x}px - 50%), calc(${state.pos.y}px - 50%)) scale(${state.scale.value})`
     })
     updateLayer.mount(fullAnimation)
