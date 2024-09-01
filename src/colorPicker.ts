@@ -68,10 +68,13 @@ export class ColorPicker extends LitElement {
         border-color: white;
         --tw-pinch-zoom: pinch-zoom;
         touch-action: var(--tw-pan-x) var(--tw-pan-y) var(--tw-pinch-zoom);
-        border-width: 12px;
+        border-width: 8px;
         height: 100%;
         width: 100%;
         display: flex;
+        outline: solid;
+        outline-width: 8px;
+        outline-color: white;
         justify-content: center;
         align-items: center;
         z-index: 3;
@@ -158,7 +161,7 @@ export class ColorPicker extends LitElement {
 
       this.gl?.readPixels((state.pos.x - 14) * window.devicePixelRatio, (height - (state.pos.y + 14)) * window.devicePixelRatio, 1, 1, this.gl?.RGBA, this.gl?.UNSIGNED_BYTE, pixel)
       selector.style.backgroundColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
-      border.style.borderColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
+      border.style.outlineColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
       selector.style.transform = `translate(calc(${state.pos.x}px - 50%), calc(${state.pos.y}px - 50%)) scale(${state.scale.value})`
     })
     updateLayer.mount(fullAnimation)
