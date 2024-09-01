@@ -37,24 +37,19 @@ export class ColorPicker extends LitElement {
   program?: WebGLProgram
 
   static styles = css`
+      :host {
+        display: block;
+      }
       #bound {
         position: relative;
         border-radius: 9999px;
         width: 100%;
         height: 100%;
       }
-      #center {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        height: 100%;
-
-      }
       #selector {
         position: absolute;
-        height: 1rem;
-        width: 1rem;
+        height: 2rem;
+        width: 2rem;
         border: solid;
         border-width: 3px;
         box-sizing: border-box;
@@ -83,13 +78,14 @@ export class ColorPicker extends LitElement {
         background-color: white;
       }
       #canvas {
+        border-radius: 9999px;
         height: 100%;
         width: 100%;
-        border-radius: 9999px;
-        border: solid;
-        border-color: white;
-        border-width: 16px;
-        --tw-border-opacity: 1;
+        // border-radius: 9999px;
+        // border: solid;
+        // border-color: white;
+        // border-width: 8px;
+        // --tw-border-opacity: 1;
         --tw-pinch-zoom: pinch-zoom;
         touch-action: var(--tw-pan-x) var(--tw-pan-y) var(--tw-pinch-zoom);
         z-index: 1;
@@ -105,10 +101,8 @@ export class ColorPicker extends LitElement {
     return html`
       <div id="bound">
           <div id="selector"></div>
-          <div id="center">
-            <div id="border">
-              <canvas id="canvas"></canvas>
-            </div>
+          <div id="border">
+            <canvas id="canvas"></canvas>
           </div>
       </div>
     `
@@ -134,10 +128,10 @@ export class ColorPicker extends LitElement {
     )
 
     const updateLayer = getUpdateLayer<Anim>()
-    const momentumLayer = localMomentumLayer(0.08, 1)
+    const momentumLayer = localMomentumLayer(0.8, 1)
     const snapLayer = getSnapPointLayer(
       { x: width / 2, y: height / 2 },
-      distanceLessThan(8)
+      distanceLessThan(width / 32)
     )
     snapLayer.mount(posAnim)
     addReactor(anim, ({ pos }) => ({ borderColorPos: pos }), {
@@ -145,18 +139,27 @@ export class ColorPicker extends LitElement {
       scale: false,
     })
 
+    const colorValue: {
+      pixel: Uint8Array,
+      position: [number, number]
+    } = {
+      pixel: new Uint8Array(4),
+      position: [Infinity, Infinity]
+    }
+
     updateLayer.subscribe("update", anim => {
       const {
         pos: { x, y },
         scale: { value: scale },
-        borderColorPos: { x: borderX, y: borderY },
       } = getStateTree(anim)
 
-      let pixel = new Uint8Array(4)
-      this.gl?.readPixels(x * window.devicePixelRatio, y * window.devicePixelRatio, 1, 1, this.gl?.RGBA, this.gl?.UNSIGNED_BYTE, pixel)
-      selector.style.backgroundColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
+      if (colorValue.position[0] !== x || colorValue.position[1] !== y) {
+        this.gl?.readPixels(Math.floor(x * window.devicePixelRatio), Math.floor((height - y) * window.devicePixelRatio), 1, 1, this.gl?.RGBA, this.gl?.UNSIGNED_BYTE, colorValue.pixel)
+        colorValue.position = [x, y]
+      }
+      selector.style.backgroundColor = `rgb(${colorValue.pixel[0]}, ${colorValue.pixel[1]}, ${colorValue.pixel[2]})`
       selector.style.transform = `translate(calc(${x}px - 50%), calc(${y}px - 50%)) scale(${scale})`
-      border.style.borderColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
+      border.style.borderColor = `rgb(${colorValue.pixel[0]}, ${colorValue.pixel[1]}, ${colorValue.pixel[2]})`
 
     })
 
@@ -202,7 +205,7 @@ export class ColorPicker extends LitElement {
       modifyTo(scaleAnim, { value: 1.2 })
       if (e.pointerType !== "mouse") {
       }
-      // canvas.style.cursor = "none"
+      canvas.style.cursor = "none"
       numberOfUpdates = 0
       selector.style.visibility = "visible"
       doCursorMove(e as PointerEvent)
@@ -229,6 +232,7 @@ export class ColorPicker extends LitElement {
       this.setShader(this.fragShader)
     }
     this.renderRoot.addEventListener('onresize', () => {
+      console.log("resize")
       this.doResize()
     })
   }
@@ -237,23 +241,27 @@ export class ColorPicker extends LitElement {
     const canvas = this.renderRoot.querySelector('#canvas')! as HTMLCanvasElement
     const border = this.renderRoot.querySelector('#border')! as HTMLCanvasElement
     const borderRect = border.getBoundingClientRect()
-    console.log(borderRect)
+    const canvasRect = canvas.getBoundingClientRect()
     if (borderRect.width < borderRect.height) {
-      canvas.width = canvas.height
+      canvas.width = canvasRect.width
+      canvas.height = canvasRect.width
+      canvas.style.width = `${canvasRect.width}px`;
+      canvas.style.height = `${canvasRect.width}px`;
       border.style.width = `${borderRect.width}px`;
-      border.style.height = `${borderRect.width} px`;
+      border.style.height = `${borderRect.width}px`;
     } else {
-      canvas.height = canvas.width
+      canvas.width = canvasRect.height
+      canvas.height = canvasRect.height
+      canvas.style.width = `${canvasRect.height}px`;
+      canvas.style.height = `${canvasRect.height}px`;
       border.style.width = `${borderRect.height}px`;
-      border.style.height = `${borderRect.height} px`;
+      border.style.height = `${borderRect.height}px`;
     }
     const DPR = window.devicePixelRatio
     const width = canvas.width
     const height = canvas.height
     canvas.width *= DPR
     canvas.height *= DPR
-    canvas.style.width = `${width} px`
-    canvas.style.height = `${height} px`
     this.initializeAnimations(canvas, width, height)
   }
 
@@ -266,7 +274,7 @@ export class ColorPicker extends LitElement {
       return null
     }
     this.fragShader = undefined
-    this.gl = canvas.getContext("webgl2") ?? undefined
+    this.gl = canvas.getContext("webgl2", { preserveDrawingBuffer: true }) ?? undefined
     if (this.gl === undefined) {
       return "unable to initialize webgl"
     }
