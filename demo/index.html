@@ -15,25 +15,27 @@
   <script type="module">
     import { html, render } from 'lit';
     import '../dist/src/color-picker.js';
-    import { HCTNoZ, HCTPolar } from '../dist/src/shaders.js'
+    import { HCTPolar, VerticalGreyscaleGradient } from '../dist/src/shaders.js'
 
     render(
       html`
-        <div style="width: 100%; height: 100%; margin: 20px">
+        <div style="width: 100%; height: 100%; margin: 20px; display: flex;">
           <color-picker id="picker">
           </color-picker>
+          <vertical-slider style="margin-left: 16px;" id="scale"></vertical-slider>
         </div>
       `,
       document.querySelector('#demo')
     );
 
     let picker = document.getElementById("picker")
-    document.getElementById("picker").addEventListener('mousemove', (e) => {
-      let text = e.target.value
-      let rect = picker.getBoundingClientRect()
-      picker.setZAxis((e.clientY-rect.top)/rect.height)
+    picker.setShader(HCTPolar)
+    picker.setZAxis(0.5)
+    let scale = document.getElementById("scale")
+    scale.setShader(VerticalGreyscaleGradient)
+    scale.addEventListener("valueupdate", function (e) {
+      picker.setZAxis(e.detail.value)
     })
-    picker.setShader(HCTNoZ)
   </script>
 </body>
 </html>

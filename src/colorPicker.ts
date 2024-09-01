@@ -6,7 +6,6 @@ type PosAnim = Vec2
 type Anim = {
   pos: PosAnim
   scale: { value: number }
-  borderColorPos: PosAnim
 }
 
 const squareVertexShader = `#version 300 es
@@ -35,6 +34,7 @@ export class ColorPicker extends LitElement {
   fragShader?: String
   gl?: WebGLRenderingContext
   program?: WebGLProgram
+  zAxis: number
 
   static styles = css`
       :host {
@@ -49,13 +49,13 @@ export class ColorPicker extends LitElement {
       #selector {
         position: absolute;
         height: 2rem;
+        background-color: white;
         width: 2rem;
         border: solid;
         border-width: 3px;
         box-sizing: border-box;
         border-radius: 4rem;
         pointer-events: none;
-        visibility: hidden;
         border-color: white;
         z-index: 10;
       }
@@ -93,135 +93,93 @@ export class ColorPicker extends LitElement {
 
   constructor() {
     super()
+    this.zAxis = 0
   }
 
 
   render() {
     return html`
       <div id="bound">
-          <div id="selector"></div>
-          <div id="border">
-            <canvas id="canvas"></canvas>
-          </div>
+        <div id="selector"></div>
+        <div id="border">
+          <canvas id="canvas"></canvas>
+        </div>
       </div>
     `
   }
 
 
-  initializeAnimations(canvas: HTMLCanvasElement, width: number, height: number) {
+  initializeAnimations() {
+    const canvas = this.renderRoot.querySelector("#canvas") as HTMLCanvasElement
     const selector = this.renderRoot.querySelector("#selector") as HTMLElement
-    const border = this.renderRoot.querySelector("#border") as HTMLElement
+    const { width, height, left, top } = canvas.getBoundingClientRect()
+    // const border = this.renderRoot.querySelector("#border") as HTMLElement
+
+    selector.style.transform = `translate(calc(${(width / 2)}px - 50%), calc(${(height / 2)}px - 50%))`
 
     const posAnim = createAnimation<PosAnim>(
-      newVec2(width / 2, height / 2),
+      newVec2(width/2, height / 2),
       getSlerp(0.05)
     )
-    const borderColorAnim = createAnimation<PosAnim>(
-      newVec2(width / 2, height / 2),
-      NO_INTERP
+
+    const restrictPosition = restrictFromFunctionExtension<PosAnim>(state => {
+      const center = newVec2(width/2, height/2)
+      const dist = subVec(state, center)
+      if (mag(dist) > width / 2 - 16) {
+        const updatedDestination = addVec(mulScalar(normalize(dist), width / 2 - 16), center)
+        modifyTo(posAnim, updatedDestination, true)
+      }
+    })
+    restrictPosition(posAnim)
+
+    const snapLayer = getSnapPointLayer(
+      { x: width / 2, y: height / 2},
+      distanceLessThan(width/32)
     )
-    const scaleAnim = createAnimation({ value: 1 }, getSlerp(0.1))
-    const anim = createParentAnimation<Anim>(
-      { pos: posAnim, scale: scaleAnim, borderColorPos: borderColorAnim },
+    snapLayer.mount(posAnim)
+
+    const scaleAnim = createAnimation<{value: number}>(
+      {value: 1.0},
+      getSlerp(0.1)
+    )
+
+    const fullAnimation = createParentAnimation<Anim>(
+      {
+        pos: posAnim,
+        scale: scaleAnim,
+      },
       NO_INTERP
     )
 
     const updateLayer = getUpdateLayer<Anim>()
-    const momentumLayer = localMomentumLayer(0.8, 1)
-    const snapLayer = getSnapPointLayer(
-      { x: width / 2 + 16, y: height / 2 + 16 },
-      distanceLessThan(width / 32)
-    )
-    snapLayer.mount(posAnim)
-    addReactor(anim, ({ pos }) => ({ borderColorPos: pos }), {
-      borderColorPos: false,
-      scale: false,
-    })
-
-    const colorValue: {
-      pixel: Uint8Array,
-      position: [number, number]
-    } = {
-      pixel: new Uint8Array(4),
-      position: [Infinity, Infinity]
-    }
-
+    let pixel = new Uint8Array(4)
     updateLayer.subscribe("update", anim => {
-      const {
-        pos: { x, y },
-        scale: { value: scale },
-      } = getStateTree(anim)
-
-      if (colorValue.position[0] !== x || colorValue.position[1] !== y) {
-        this.gl?.readPixels(Math.floor((x - 16) * window.devicePixelRatio), Math.floor((height - (y - 16)) * window.devicePixelRatio), 1, 1, this.gl?.RGBA, this.gl?.UNSIGNED_BYTE, colorValue.pixel)
-        colorValue.position = [x, y]
-      }
-      selector.style.backgroundColor = `rgb(${colorValue.pixel[0]}, ${colorValue.pixel[1]}, ${colorValue.pixel[2]})`
-      selector.style.transform = `translate(calc(${x}px - 50%), calc(${y}px - 50%)) scale(${scale})`
-      border.style.borderColor = `rgb(${colorValue.pixel[0]}, ${colorValue.pixel[1]}, ${colorValue.pixel[2]})`
-
+      const state = getStateTree(anim)
+      
+      this.gl?.readPixels(state.pos.x * window.devicePixelRatio, (height-state.pos.y)*window.devicePixelRatio, 1, 1, this.gl?.RGBA, this.gl?.UNSIGNED_BYTE, pixel)
+      selector.style.backgroundColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
+      selector.style.transform = `translate(calc(${state.pos.x}px - 50%), calc(${state.pos.y}px - 50%)) scale(${state.scale.value})`
     })
+    updateLayer.mount(fullAnimation)
 
-    const restrictExtension = restrictFromFunctionExtension<PosAnim>(state => {
-      const center = newVec2(width / 2 + 16, height / 2 + 16)
-      const fromCenter = subVec(state, center)
-      if (mag(fromCenter) > width / 2 - 8) {
-        const fromTopLeft = addVec(
-          mulScalar(
-            normalize(fromCenter),
-            width / 2 - 8 - Number.EPSILON * width
-          ),
-          center
-        )
-        const vel = momentumLayer.getVelocity()
-        if (vel == 0) {
-          modifyTo(posAnim, fromTopLeft, false)
-          return
-        }
-        const start = getStateTree(posAnim)
-        const end = fromTopLeft
-        const fromEnd = subVec(start, end)
-        const dist = mag(fromEnd)
-        changeInterpFunction(posAnim, getSlerp(dist / vel))
-        modifyTo(posAnim, fromTopLeft, false)
-      }
-    })
-    updateLayer.mount(anim)
-    momentumLayer.mount(posAnim)
-    restrictExtension(posAnim)
+
     function doCursorMove(e: PointerEvent) {
-      const rect = canvas.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
-      modifyTo(posAnim, { x, y })
-      if (numberOfUpdates < 3) {
-        momentumLayer.clearRecordedStates()
-        numberOfUpdates++
-      }
+      modifyTo(posAnim, { x: e.clientX - left, y: e.clientY - top})
     }
-    let numberOfUpdates = 0
+
     canvas.addEventListener("pointerdown", function(e) {
-      modifyTo(scaleAnim, { value: 1.2 })
-      if (e.pointerType !== "mouse") {
-      }
       canvas.style.cursor = "none"
-      numberOfUpdates = 0
-      selector.style.visibility = "visible"
-      doCursorMove(e as PointerEvent)
+      modifyTo(scaleAnim, {value: 1.2})
+      doCursorMove(e)
       window.addEventListener("pointermove", doCursorMove)
-      window.addEventListener(
-        "pointerup",
-        function() {
-          if (numberOfUpdates > 2) {
-            momentumLayer.startGlide()
-          }
-          modifyTo(scaleAnim, { value: 1 })
-          canvas.style.cursor = "default"
-          window.removeEventListener("pointermove", doCursorMove)
-        },
-        { once: true }
-      )
+      window.addEventListener("pointerup", function() {
+        canvas.style.cursor = "default"
+        window.removeEventListener("pointermove", doCursorMove)
+        modifyTo(scaleAnim, {value: 1.0})
+      })
     })
+
+
   }
 
   firstUpdated() {
@@ -230,10 +188,12 @@ export class ColorPicker extends LitElement {
     if (this.fragShader != undefined) {
       this.setShader(this.fragShader)
     }
+    this.setZAxis(this.zAxis)
     this.renderRoot.addEventListener('onresize', () => {
       console.log("resize")
       this.doResize()
     })
+    this.initializeAnimations()
   }
 
   doResize() {
@@ -261,7 +221,6 @@ export class ColorPicker extends LitElement {
     const height = canvas.height
     canvas.width *= DPR
     canvas.height *= DPR
-    this.initializeAnimations(canvas, width, height)
   }
 
 
@@ -320,6 +279,7 @@ export class ColorPicker extends LitElement {
   }
 
   setZAxis(z: number) {
+    this.zAxis = z
     if (this.gl === undefined || this.program === undefined) {
       return
     }
