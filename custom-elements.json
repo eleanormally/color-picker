@@ -1,0 +1,184 @@
+{
+  "schemaVersion": "1.0.0",
+  "readme": "",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "src/ColorPicker.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "ColorPicker",
+          "members": [
+            {
+              "kind": "field",
+              "name": "header",
+              "type": {
+                "text": "string"
+              },
+              "default": "'Hey there'",
+              "attribute": "header"
+            },
+            {
+              "kind": "field",
+              "name": "counter",
+              "type": {
+                "text": "number"
+              },
+              "default": "5",
+              "attribute": "counter"
+            },
+            {
+              "kind": "method",
+              "name": "__increment"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "header",
+              "type": {
+                "text": "string"
+              },
+              "default": "'Hey there'",
+              "fieldName": "header"
+            },
+            {
+              "name": "counter",
+              "type": {
+                "text": "number"
+              },
+              "default": "5",
+              "fieldName": "counter"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "color-picker",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "ColorPicker",
+          "declaration": {
+            "name": "ColorPicker",
+            "module": "src/ColorPicker.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/color-picker.ts",
+      "declarations": [],
+      "exports": [
+        {
+          "kind": "custom-element-definition",
+          "name": "color-picker",
+          "declaration": {
+            "name": "ColorPicker",
+            "module": "/src/ColorPicker.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/index.ts",
+      "declarations": [],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "ColorPicker",
+          "declaration": {
+            "name": "ColorPicker",
+            "module": "./ColorPicker.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/src/ColorPicker.js",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "ColorPicker",
+          "members": [
+            {
+              "kind": "method",
+              "name": "__increment"
+            },
+            {
+              "kind": "field",
+              "name": "header",
+              "type": {
+                "text": "string"
+              },
+              "default": "'Hey there'"
+            },
+            {
+              "kind": "field",
+              "name": "counter",
+              "type": {
+                "text": "number"
+              },
+              "default": "5"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "color-picker",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "ColorPicker",
+          "declaration": {
+            "name": "ColorPicker",
+            "module": "dist/src/ColorPicker.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/src/color-picker.js",
+      "declarations": [],
+      "exports": [
+        {
+          "kind": "custom-element-definition",
+          "name": "color-picker",
+          "declaration": {
+            "name": "ColorPicker",
+            "module": "/dist/src/ColorPicker.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/src/index.js",
+      "declarations": [],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "ColorPicker",
+          "declaration": {
+            "name": "ColorPicker",
+            "module": "./ColorPicker.js"
+          }
+        }
+      ]
+    }
+  ]
+}

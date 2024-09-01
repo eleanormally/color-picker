@@ -1,25 +1,68 @@
-import { blueFromArgb, greenFromArgb, Hct, redFromArgb } from '@material/material-color-utilities';
-import { LitElement, css, html } from 'lit';
-import { customElement } from 'lit/decorators.js';
+import { addReactor, distanceLessThan, getSnapPointLayer, getUpdateLayer, localMomentumLayer, restrictFromFunctionExtension } from '@aninest/extensions';
+import { addLocalListener, addVec, changeInterpFunction, createAnimation, createParentAnimation, getInterpFunction, getSlerp, getStateTree, mag, modifyTo, mulScalar, newVec2, NO_INTERP, normalize, subVec, Vec2 } from 'aninest';
+import { html, css, LitElement } from 'lit';
 
+type PosAnim = Vec2
+type Anim = {
+  pos: PosAnim
+  scale: { value: number }
+  borderColorPos: PosAnim
+}
 
-@customElement('color-picker')
-class ColorPicker extends LitElement {
+const squareVertexShader = `#version 300 es
+  in vec4 vertexPosition;
+
+  void main() {
+    gl_Position = vertexPosition;
+  }
+`
+
+function initializeShader(gl: WebGLRenderingContext, shaderType: number, shaderCode: String): WebGLShader | string {
+  const shader = gl.createShader(shaderType)
+  if (shader === null) {
+    return "unable to create shader"
+  }
+  gl.shaderSource(shader, shaderCode.trim())
+  gl.compileShader(shader)
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    return gl.getShaderInfoLog(shader) ?? ""
+  }
+  return shader
+}
+
+export class ColorPicker extends LitElement {
+
+  fragShader?: String
+  gl?: WebGLRenderingContext
+  program?: WebGLProgram
 
   static styles = css`
       #bound {
         position: relative;
+        border-radius: 9999px;
+        width: 100%;
+        height: 100%;
+      }
+      #center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+
       }
       #selector {
         position: absolute;
-        height: 4rem;
-        width: 4rem;
-        border-width: 2px;
+        height: 1rem;
+        width: 1rem;
+        border: solid;
+        border-width: 3px;
         box-sizing: border-box;
         border-radius: 4rem;
         pointer-events: none;
         visibility: hidden;
         border-color: white;
+        z-index: 10;
       }
       #border {
         border-radius: 9999px;
@@ -27,64 +70,255 @@ class ColorPicker extends LitElement {
         --tw-shadow-colored: 0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);
         box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
         border: solid;
-        border-color: white; 
+        border-color: white;
         --tw-pinch-zoom: pinch-zoom;
         touch-action: var(--tw-pan-x) var(--tw-pan-y) var(--tw-pinch-zoom);
-        border-width: 8px;
+        border-width: 4px;
+        height: 100%;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2;
+        background-color: white;
+      }
+      #canvas {
+        height: 100%;
+        width: 100%;
+        border-radius: 9999px;
+        border: solid;
+        border-color: white;
+        border-width: 16px;
+        --tw-border-opacity: 1;
+        --tw-pinch-zoom: pinch-zoom;
+        touch-action: var(--tw-pan-x) var(--tw-pan-y) var(--tw-pinch-zoom);
+        z-index: 1;
       }
   `
+
+  constructor() {
+    super()
+  }
+
 
   render() {
     return html`
       <div id="bound">
-        <div id="selector"></div>
-        <div id="border">
-          <canvas id="canvas"></canvas>
-        </div>
+          <div id="selector"></div>
+          <div id="center">
+            <div id="border">
+              <canvas id="canvas"></canvas>
+            </div>
+          </div>
       </div>
     `
   }
 
-  updated() {
-    const canvas = this.shadowRoot!.getElementById('canvas')! as HTMLCanvasElement
-    if (canvas.width > canvas.height) {
+
+  initializeAnimations(canvas: HTMLCanvasElement, width: number, height: number) {
+    const selector = this.renderRoot.querySelector("#selector") as HTMLElement
+    const border = this.renderRoot.querySelector("#border") as HTMLElement
+
+    const posAnim = createAnimation<PosAnim>(
+      newVec2(width / 2, height / 2),
+      getSlerp(0.05)
+    )
+    const borderColorAnim = createAnimation<PosAnim>(
+      newVec2(width / 2, height / 2),
+      NO_INTERP
+    )
+    const scaleAnim = createAnimation({ value: 1 }, getSlerp(0.1))
+    const anim = createParentAnimation<Anim>(
+      { pos: posAnim, scale: scaleAnim, borderColorPos: borderColorAnim },
+      NO_INTERP
+    )
+
+    const updateLayer = getUpdateLayer<Anim>()
+    const momentumLayer = localMomentumLayer(0.08, 1)
+    const snapLayer = getSnapPointLayer(
+      { x: width / 2, y: height / 2 },
+      distanceLessThan(8)
+    )
+    snapLayer.mount(posAnim)
+    addReactor(anim, ({ pos }) => ({ borderColorPos: pos }), {
+      borderColorPos: false,
+      scale: false,
+    })
+
+    updateLayer.subscribe("update", anim => {
+      const {
+        pos: { x, y },
+        scale: { value: scale },
+        borderColorPos: { x: borderX, y: borderY },
+      } = getStateTree(anim)
+
+      let pixel = new Uint8Array(4)
+      this.gl?.readPixels(x * window.devicePixelRatio, y * window.devicePixelRatio, 1, 1, this.gl?.RGBA, this.gl?.UNSIGNED_BYTE, pixel)
+      selector.style.backgroundColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
+      selector.style.transform = `translate(calc(${x}px - 50%), calc(${y}px - 50%)) scale(${scale})`
+      border.style.borderColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
+
+    })
+
+    const restrictExtension = restrictFromFunctionExtension<PosAnim>(state => {
+      const center = newVec2(width / 2, height / 2)
+      const fromCenter = subVec(state, center)
+      if (mag(fromCenter) > width / 2 - 8) {
+        const fromTopLeft = addVec(
+          mulScalar(
+            normalize(fromCenter),
+            width / 2 - 8 - Number.EPSILON * width
+          ),
+          center
+        )
+        const vel = momentumLayer.getVelocity()
+        if (vel == 0) {
+          modifyTo(posAnim, fromTopLeft, false)
+          return
+        }
+        const start = getStateTree(posAnim)
+        const end = fromTopLeft
+        const fromEnd = subVec(start, end)
+        const dist = mag(fromEnd)
+        changeInterpFunction(posAnim, getSlerp(dist / vel))
+        modifyTo(posAnim, fromTopLeft, false)
+      }
+    })
+    updateLayer.mount(anim)
+    momentumLayer.mount(posAnim)
+    restrictExtension(posAnim)
+    function doCursorMove(e: PointerEvent) {
+      const rect = canvas.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+      modifyTo(posAnim, { x, y })
+      if (numberOfUpdates < 3) {
+        momentumLayer.clearRecordedStates()
+        numberOfUpdates++
+      }
+    }
+    let numberOfUpdates = 0
+    canvas.addEventListener("pointerdown", function(e) {
+      modifyTo(scaleAnim, { value: 1.2 })
+      if (e.pointerType !== "mouse") {
+      }
+      // canvas.style.cursor = "none"
+      numberOfUpdates = 0
+      selector.style.visibility = "visible"
+      doCursorMove(e as PointerEvent)
+      window.addEventListener("pointermove", doCursorMove)
+      window.addEventListener(
+        "pointerup",
+        function() {
+          if (numberOfUpdates > 2) {
+            momentumLayer.startGlide()
+          }
+          modifyTo(scaleAnim, { value: 1 })
+          canvas.style.cursor = "default"
+          window.removeEventListener("pointermove", doCursorMove)
+        },
+        { once: true }
+      )
+    })
+  }
+
+  firstUpdated() {
+    this.doResize()
+    //TODO: figure out a better way than this bouncing, since it doesn't return errors
+    if (this.fragShader != undefined) {
+      this.setShader(this.fragShader)
+    }
+    this.renderRoot.addEventListener('onresize', () => {
+      this.doResize()
+    })
+  }
+
+  doResize() {
+    const canvas = this.renderRoot.querySelector('#canvas')! as HTMLCanvasElement
+    const border = this.renderRoot.querySelector('#border')! as HTMLCanvasElement
+    const borderRect = border.getBoundingClientRect()
+    console.log(borderRect)
+    if (borderRect.width < borderRect.height) {
       canvas.width = canvas.height
+      border.style.width = `${borderRect.width}px`;
+      border.style.height = `${borderRect.width} px`;
     } else {
       canvas.height = canvas.width
+      border.style.width = `${borderRect.height}px`;
+      border.style.height = `${borderRect.height} px`;
     }
     const DPR = window.devicePixelRatio
     const width = canvas.width
     const height = canvas.height
     canvas.width *= DPR
     canvas.height *= DPR
-    canvas.style.width = `${width}px`
-    canvas.style.height = `${height}px`
-    const ctx = canvas.getContext("2d")
-    if (ctx === null) {
+    canvas.style.width = `${width} px`
+    canvas.style.height = `${height} px`
+    this.initializeAnimations(canvas, width, height)
+  }
+
+
+  setShader(shader: String): string | null {
+    //checking if the component hasn't been mounted yet during call. this should probably be some event hold
+    this.fragShader = shader
+    const canvas = this.renderRoot.querySelector('#canvas')! as HTMLCanvasElement
+    if (canvas === null) {
+      return null
+    }
+    this.fragShader = undefined
+    this.gl = canvas.getContext("webgl2") ?? undefined
+    if (this.gl === undefined) {
+      return "unable to initialize webgl"
+    }
+    const vertexShader = initializeShader(this.gl, this.gl.VERTEX_SHADER, squareVertexShader)
+    if (typeof vertexShader === "string") {
+      return "error loading vertex shader: " + vertexShader
+    }
+    const fragmentShader = initializeShader(this.gl, this.gl.FRAGMENT_SHADER, shader)
+    if (typeof fragmentShader === "string") {
+      return "error loading given fragment shader: " + fragmentShader
+    }
+    const program = this.gl.createProgram();
+    if (program === null) {
+      return "could not create shader program"
+    }
+    this.gl.attachShader(program, vertexShader)
+    this.gl.attachShader(program, fragmentShader)
+    this.gl.linkProgram(program)
+    if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
+      return "could not link shader program: " + this.gl.getProgramInfoLog(program)
+    }
+    this.gl.useProgram(program)
+    this.program = program
+
+    const vertices = [
+      [-1, -1, 0], // [x, y, z]
+      [1, -1, 0],
+      [1, 1, 0],
+      [1, 1, 0],
+      [-1, 1, 0],
+      [-1, -1, 0],
+    ];
+    const vertexData = new Float32Array(vertices.flat())
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.gl.createBuffer())
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertexData, this.gl.STATIC_DRAW)
+    const vertexPosition = this.gl.getAttribLocation(program, "vertexPosition")
+    this.gl.enableVertexAttribArray(vertexPosition)
+    this.gl.vertexAttribPointer(vertexPosition, 3, this.gl.FLOAT, false, 0, 0)
+
+    const resolutionUniform = this.gl.getUniformLocation(program, 'u_resolution')
+    this.gl.uniform2fv(resolutionUniform, [canvas.width, canvas.height])
+    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+    return null
+  }
+
+  setZAxis(z: number) {
+    if (this.gl === undefined || this.program === undefined) {
       return
     }
-
-    let id = ctx.createImageData(canvas.width, canvas.height)
-    for (let val = 0; val < id.data.length; val += 4) {
-      let i = val / 4
-      let y = Math.floor(i / canvas.width)
-      let x = i % canvas.width
-      let dx = (x / canvas.width) * 2 - 1
-      let dy = (y / canvas.height) * 2 - 1
-      let radius = Math.sqrt(dx * dx + dy * dy)
-      let angle = (Math.asin(dy / radius) / Math.PI) * 180
-      if (dx < 0) {
-        angle = 180 - angle
-      }
-      let color = Hct.from(angle, radius * 90, 100 - radius * 50).toInt()
-      id.data[val + 0] = redFromArgb(color) // red
-      id.data[val + 1] = greenFromArgb(color) // green
-      id.data[val + 2] = blueFromArgb(color) // blue
-      id.data[val + 3] = 255 // alpha
-    }
-    ctx.putImageData(id, 0, 0)
-
+    const zUniform = this.gl.getUniformLocation(this.program, 'u_zAxis')
+    this.gl.uniform1f(zUniform, z)
+    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
   }
-}
 
-export default ColorPicker
+}

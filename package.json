@@ -1,24 +1,33 @@
 {
-  "name": "school-colors",
-  "private": true,
+  "name": "color-picker",
+  "description": "Webcomponent color-picker following open-wc recommendations",
+  "license": "MIT",
+  "author": "color-picker",
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+  "main": "dist/src/index.js",
+  "module": "dist/src/index.js",
+  "exports": {
+    ".": "./dist/src/index.js",
+    "./color-picker.js": "./dist/src/color-picker.js"
   },
-  "devDependencies": {
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.41",
-    "tailwindcss": "^3.4.10",
-    "typescript": "^5.5.4",
-    "vite": "^5.4.2"
+  "scripts": {
+    "analyze": "cem analyze --litelement",
+    "start": "tsc && concurrently -k -r \"tsc --watch --preserveWatchOutput\" \"web-dev-server\"",
+    "build": "tsc && npm run analyze -- --exclude dist",
+    "prepublish": "tsc && npm run analyze -- --exclude dist"
   },
   "dependencies": {
-    "@aninest/extensions": "^1.5.0",
-    "@material/material-color-utilities": "^0.3.0",
+    "@aninest/extensions": "^1.5.1",
     "aninest": "^4.3.0",
-    "lit": "^3.2.0"
-  }
+    "lit": "^3.1.4"
+  },
+  "devDependencies": {
+    "@custom-elements-manifest/analyzer": "^0.10.3",
+    "@web/dev-server": "^0.4.6",
+    "concurrently": "^8.2.2",
+    "tslib": "^2.6.3",
+    "typescript": "^5.5.3"
+  },
+  "customElements": "custom-elements.json"
 }
