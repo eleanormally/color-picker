@@ -68,7 +68,7 @@ export class ColorPicker extends LitElement {
         border-color: white;
         --tw-pinch-zoom: pinch-zoom;
         touch-action: var(--tw-pan-x) var(--tw-pan-y) var(--tw-pinch-zoom);
-        border-width: 4px;
+        border-width: 8px;
         height: 100%;
         width: 100%;
         display: flex;
@@ -81,10 +81,9 @@ export class ColorPicker extends LitElement {
         border-radius: 9999px;
         height: 100%;
         width: 100%;
-        // border-radius: 9999px;
-        // border: solid;
-        // border-color: white;
-        // border-width: 8px;
+        border: solid;
+        border-color: white;
+        border-width: 8px;
         // --tw-border-opacity: 1;
         --tw-pinch-zoom: pinch-zoom;
         touch-action: var(--tw-pan-x) var(--tw-pan-y) var(--tw-pinch-zoom);
@@ -130,7 +129,7 @@ export class ColorPicker extends LitElement {
     const updateLayer = getUpdateLayer<Anim>()
     const momentumLayer = localMomentumLayer(0.8, 1)
     const snapLayer = getSnapPointLayer(
-      { x: width / 2, y: height / 2 },
+      { x: width / 2 + 16, y: height / 2 + 16 },
       distanceLessThan(width / 32)
     )
     snapLayer.mount(posAnim)
@@ -154,7 +153,7 @@ export class ColorPicker extends LitElement {
       } = getStateTree(anim)
 
       if (colorValue.position[0] !== x || colorValue.position[1] !== y) {
-        this.gl?.readPixels(Math.floor(x * window.devicePixelRatio), Math.floor((height - y) * window.devicePixelRatio), 1, 1, this.gl?.RGBA, this.gl?.UNSIGNED_BYTE, colorValue.pixel)
+        this.gl?.readPixels(Math.floor((x - 16) * window.devicePixelRatio), Math.floor((height - (y - 16)) * window.devicePixelRatio), 1, 1, this.gl?.RGBA, this.gl?.UNSIGNED_BYTE, colorValue.pixel)
         colorValue.position = [x, y]
       }
       selector.style.backgroundColor = `rgb(${colorValue.pixel[0]}, ${colorValue.pixel[1]}, ${colorValue.pixel[2]})`
@@ -164,7 +163,7 @@ export class ColorPicker extends LitElement {
     })
 
     const restrictExtension = restrictFromFunctionExtension<PosAnim>(state => {
-      const center = newVec2(width / 2, height / 2)
+      const center = newVec2(width / 2 + 16, height / 2 + 16)
       const fromCenter = subVec(state, center)
       if (mag(fromCenter) > width / 2 - 8) {
         const fromTopLeft = addVec(
