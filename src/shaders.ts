@@ -1292,7 +1292,7 @@ vec4 hct(float hue, float chroma, float tone) {
 
 void main() {
     vec2 uv = (gl_FragCoord.xy / u_resolution.xy * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
-    fragColor = hct(0.0, 0.0, (clamp((uv.y*1.4), -1.0, 1.0)+1.0)*50.0);
+    fragColor = hct(0.0, 0.0, (clamp((uv.y*1.3), -1.0, 1.0)+1.0)*50.0);
 }
 `
 

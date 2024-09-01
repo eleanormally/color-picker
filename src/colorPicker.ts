@@ -118,12 +118,12 @@ export class ColorPicker extends LitElement {
     selector.style.transform = `translate(calc(${(width / 2)}px - 50%), calc(${(height / 2)}px - 50%))`
 
     const posAnim = createAnimation<PosAnim>(
-      newVec2(width/2, height / 2),
+      newVec2(width / 2, height / 2),
       getSlerp(0.05)
     )
 
     const restrictPosition = restrictFromFunctionExtension<PosAnim>(state => {
-      const center = newVec2(width/2, height/2)
+      const center = newVec2(width / 2, height / 2)
       const dist = subVec(state, center)
       if (mag(dist) > width / 2 - 16) {
         const updatedDestination = addVec(mulScalar(normalize(dist), width / 2 - 16), center)
@@ -133,13 +133,13 @@ export class ColorPicker extends LitElement {
     restrictPosition(posAnim)
 
     const snapLayer = getSnapPointLayer(
-      { x: width / 2, y: height / 2},
-      distanceLessThan(width/32)
+      { x: width / 2, y: height / 2 },
+      distanceLessThan(width / 32)
     )
     snapLayer.mount(posAnim)
 
-    const scaleAnim = createAnimation<{value: number}>(
-      {value: 1.0},
+    const scaleAnim = createAnimation<{ value: number }>(
+      { value: 1.0 },
       getSlerp(0.1)
     )
 
@@ -155,8 +155,8 @@ export class ColorPicker extends LitElement {
     let pixel = new Uint8Array(4)
     updateLayer.subscribe("update", anim => {
       const state = getStateTree(anim)
-      
-      this.gl?.readPixels(state.pos.x * window.devicePixelRatio, (height-state.pos.y)*window.devicePixelRatio, 1, 1, this.gl?.RGBA, this.gl?.UNSIGNED_BYTE, pixel)
+
+      this.gl?.readPixels(state.pos.x * window.devicePixelRatio, (height - state.pos.y) * window.devicePixelRatio, 1, 1, this.gl?.RGBA, this.gl?.UNSIGNED_BYTE, pixel)
       selector.style.backgroundColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
       selector.style.transform = `translate(calc(${state.pos.x}px - 50%), calc(${state.pos.y}px - 50%)) scale(${state.scale.value})`
     })
@@ -164,18 +164,18 @@ export class ColorPicker extends LitElement {
 
 
     function doCursorMove(e: PointerEvent) {
-      modifyTo(posAnim, { x: e.clientX - left, y: e.clientY - top})
+      modifyTo(posAnim, { x: e.clientX - left, y: e.clientY - top })
     }
 
     canvas.addEventListener("pointerdown", function(e) {
       canvas.style.cursor = "none"
-      modifyTo(scaleAnim, {value: 1.2})
+      modifyTo(scaleAnim, { value: 1.2 })
       doCursorMove(e)
       window.addEventListener("pointermove", doCursorMove)
       window.addEventListener("pointerup", function() {
         canvas.style.cursor = "default"
         window.removeEventListener("pointermove", doCursorMove)
-        modifyTo(scaleAnim, {value: 1.0})
+        modifyTo(scaleAnim, { value: 1.0 })
       })
     })
 
@@ -286,6 +286,10 @@ export class ColorPicker extends LitElement {
     const zUniform = this.gl.getUniformLocation(this.program, 'u_zAxis')
     this.gl.uniform1f(zUniform, z)
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+  }
+
+  getGlContext(): WebGLRenderingContext | undefined {
+    return this.gl
   }
 
 }

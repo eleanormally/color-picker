@@ -64,11 +64,11 @@ export class VerticalSlider extends LitElement {
       border-radius: 9999px;
       height: 100%;
       width: 100%;
+      border: none;
       border: solid;
       background-color: black;
       border-color: white;
       border-width: 8px;
-      // --tw-border-opacity: 1;
       --tw-pinch-zoom: pinch-zoom;
       touch-action: var(--tw-pan-x) var(--tw-pan-y) var(--tw-pinch-zoom);
       z-index: 1;
@@ -206,6 +206,10 @@ export class VerticalSlider extends LitElement {
     this.gl.uniform2fv(resolutionUniform, [canvas.width, canvas.height])
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
     return null
+  }
+
+  getGlContext(): WebGLRenderingContext | undefined {
+    return this.gl
   }
 
 }
