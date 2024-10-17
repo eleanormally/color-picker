@@ -15,23 +15,22 @@
   <script type="module">
     import { html, render } from 'lit';
     import '../dist/src/color-picker.js';
-    import { HCTPolar, HCTNoZ, VerticalGreyscaleGradient } from '../dist/src/shaders.js'
+    import { TestFrag, HCTCart, HCTPolar, HCTNoZ, VerticalGreyscaleGradient } from '../dist/src/shaders.js'
 
     render(
       html`
         <div style="width: 100%; height: 100%; margin: 20px; display: flex;">
-          <color-picker id="picker">
-          </color-picker>
-          <vertical-slider style="margin-left: 16px;" id="scale"></vertical-slider>
+          <circle-picker id="picker">
+          </circle-picker>
+          <vertical-slider style="margin: 18px;" id="scale"></vertical-slider>
         </div>
-          <color-picker id="picker2">
-          </color-picker>
+        <div style="width: 100%; height: 100%; margin: 20px; display: flex;">
+          <square-picker id="picker2">
+          </square-picker>
+        </div>
       `,
       document.querySelector('#demo')
     );
-    let picker2 = document.getElementById("picker2")
-    picker2.setShader(HCTNoZ)
-
     let picker = document.getElementById("picker")
     picker.setShader(HCTPolar)
     picker.setZAxis(0.5)
@@ -41,17 +40,27 @@
       picker.setZAxis(e.detail.value)
     })
     picker.addEventListener("posupdate", function(e) {
-      let gl = scale.getGlContext()
-      let rad = Math.sqrt(e.detail.x*e.detail.x+e.detail.y*e.detail.y)
-      let angle = Math.asin(e.detail.y/rad)/Math.PI * 180
-      if (e.detail.x < 0) {
-        angle = 180-angle
+      // console.log(e.detail.pos.r, e.detail.pos.theta)
+      if (e.detail.pos.r < 0.01) {
+        // console.log(e.detail)
       }
-      const hueLoc = gl.getUniformLocation(scale.getProgram(), "u_hue")
-      gl.uniform1f(hueLoc, angle)
-      const chromaLoc = gl.getUniformLocation(scale.getProgram(), "u_chroma")
-      gl.uniform1f(chromaLoc, rad*100)
-      gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+      // let gl = scale.getGlContext()
+      // let rad = Math.sqrt(e.detail.x*e.detail.x+e.detail.y*e.detail.y)
+      // let angle = Math.asin(e.detail.y/rad)/Math.PI * 180
+      // if (e.detail.x < 0) {
+      //   angle = 180-angle
+      // }
+      // const hueLoc = gl.getUniformLocation(scale.getProgram(), "u_hue")
+      // gl.uniform1f(hueLoc, angle)
+      // const chromaLoc = gl.getUniformLocation(scale.getProgram(), "u_chroma")
+      // gl.uniform1f(chromaLoc, rad*100)
+      // gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+    })
+    let picker2 = document.getElementById("picker2")
+    picker2.setShader(HCTCart)
+    picker2.setZAxis(0.5)
+    scale.addEventListener("valueupdate", function (e) {
+      picker2.setZAxis(e.detail.value)
     })
   </script>
 </body>

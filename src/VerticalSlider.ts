@@ -69,8 +69,7 @@ export class VerticalSlider extends LitElement {
       background-color: black;
       border-color: white;
       border-width: 8px;
-      --tw-pinch-zoom: pinch-zoom;
-      touch-action: var(--tw-pan-x) var(--tw-pan-y) var(--tw-pinch-zoom);
+      touch-action: none;
       z-index: 1;
     }
     
@@ -88,7 +87,7 @@ export class VerticalSlider extends LitElement {
   initializeAnimations() {
     const canvas = this.renderRoot.querySelector("#canvas") as HTMLElement
     const selector = this.renderRoot.querySelector("#selector") as HTMLElement
-    const { width, height, left, top } = canvas.getBoundingClientRect()
+    const { width, height, } = canvas.getBoundingClientRect()
     selector.style.transform = `translate(calc(${width / 2}px - 50%), calc(${height / 2}px - 50%))`
 
     const posAnim = createAnimation<ScalarAnim>(
@@ -132,6 +131,7 @@ export class VerticalSlider extends LitElement {
     updateLayer.mount(anim)
 
     function doCursorMove(e: PointerEvent) {
+      const { top } = canvas.getBoundingClientRect()
       const value = e.clientY - top
       modifyTo(posAnim, { value })
     }

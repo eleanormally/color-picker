@@ -1,1 +1,1 @@
-export { ColorPicker } from './ColorPicker.js';
+export { PickerBase } from './ColorPicker.js';
