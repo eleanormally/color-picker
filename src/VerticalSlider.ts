@@ -151,7 +151,11 @@ export class VerticalSlider extends LitElement {
 
   firstUpdated() {
     if (this.fragShader !== undefined) {
-      this.setShader(this.fragShader)
+      const output = this.setShader(this.fragShader)
+      if (output !== null) {
+        console.log("unable to initialize shader: ", output)
+      }
+
     }
     this.initializeAnimations()
   }
